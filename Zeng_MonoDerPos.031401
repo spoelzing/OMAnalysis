@@ -1,0 +1,84 @@
+function [Label,Comment,Annote_Out]=Zeng_MonoDerPos(Z,X1X2,ChLabel,Annote)
+% This function first checks to see if an activation time can be 
+% assigned to each channel. If an activation time can be assigned, 
+% then the algorithm looks for a suitbale repolarization time based
+% on the maximum of the second derivative.
+Label='RT ';
+Comment='Repolarization Time';
+Annote_Out=[];
+%-----------------------------
+global Log
+%-----------------------------
+n=[0:Log.Head.SRate/5];
+%u=exp(-(n-50).^2/30);
+u=-exp(-n/20)-exp(-n/.1);
+Data=Zeng_FltLP_Return(Z,X1X2,400);
+% Boxcar => The variable that specifies the length of the boxcar filter
+% Make sure to use an ODD NUMBER
+Boxcar=13;
+% N D are the Numerator and Denominator Coefficients for the Activation filter
+[N D]=butter(4,59/500,'low');
+% PhaseDelay => The delay introduced by the filter. You should Tweak this
+%   until you are comfortable that it is assigning the AT at the correct location.
+PhaseDelay=10;
+% Threshold => An arbitrary value that prevents noisy channels from having 
+%              an activation time assigned.
+Threshold=-5;
+%blockout => The number of data points skipped until the algorithm looks for an RT
+blockout=100;
+
+% NR DR are the Numerator and Denominator Coefficients for the Repolarization filter
+[NR DR]=butter(4,12/500,'low');
+
+%-----------------------------
+h=waitbar(1/length(ChLabel(:,1)),'Calculating Repolarization Times');
+for i=1:length(ChLabel(:,1))
+  AP=0;
+% DataCh => The Data for a specific Channel
+   DataCh=Data(ChLabel(i,2),:);
+   
+% Smoothe => Smoothing the original data
+%            Use One but not both.   
+         % Smoothe=conv2(DataCh,ones(1,Boxcar),'same');
+         Smoothe=filter(N,D,DataCh);
+         
+% Temp => The derivative of the Smoothed Data
+   Temp=[0 diff(Smoothe)];
+   [Peak I1]=find(Temp==min(Temp(Boxcar:length(Temp)-Boxcar)));
+   if min(Temp(Boxcar:length(Temp)-Boxcar))<Threshold*std(Temp(Boxcar:length(Temp)-Boxcar))
+   			AP=1;   
+   end
+   waitbar(i/length(ChLabel(:,1)));
+   dat=DataCh-DataCh(1);
+   %  dat=conv2(DataCh,ones(1,15),'same');
+ %  Temp=diff([0 dat]);
+   Temp=xcorr(-u,dat);
+   
+  Temp=diff([Temp(length(Smoothe):end)]);  
+  %Smoother=filter(NR,DR,Temp);
+  %Smoother=Temp;
+  %Temp=filter(NR,DR,diff([0 Smoother]));
+  
+   %[Y I]=find(Temp(Peak+blockout:length(Temp))>0);
+     Is=Peak(1)+blockout;
+ %Temp=Temp(Log.Head.SRate/2:Temp-Log.Head.SRate/2);
+ if AP==1 & (Peak+blockout)<length(Temp)-10 
+    Peakr=find(Temp==max(Temp(Is:end-10)));
+    Peakr=round(Peakr+30);
+%    if Peakr(1)>Peak(1)
+       Annote_Out=[Annote_Out;ChLabel(i,1) Peakr(1) Label];
+%    end
+ end
+% figure(10)
+% subplot(2,1,1),plot(dat)
+% line([Peakr(1),Peakr(1)],[max(Smoothe),min(Smoothe)])
+% subplot(2,1,2),plot(Temp,'r')
+% line([Peakr(1),Peakr(1)],[max(Temp),min(Temp)])
+% pause
+end
+close(h)
+Annote_Out(:,2)=Annote_Out(:,2)+X1X2(1);
+Annote_Out=[Annote;Annote_Out];
+%-----------------------------
+
+

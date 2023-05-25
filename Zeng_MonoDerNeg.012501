@@ -1,0 +1,86 @@
+function [Label,Comment,Annote_Out]=Zeng_MonoDerNeg(Z,X1X2,ChLabel,Annote)
+% AUTHOR: Steven Poelzing
+% DATE LAST MODIFIED: 01/25/01
+% Activation Time Algorithm
+
+% new in average6:
+% PeakDetection exported to PeakDetection.m and documented
+%   
+
+% new in average5:
+% PEAKS initialized to empty array, to avoid errors when no peaks
+% found.
+% for loop to go through all channels.
+  
+
+% new in average4:
+% made slopewindow be all points that are below threshold (in
+% derivative)
+% perform all derivative analysis on smoothed derivaitve
+% smooth function converted to convolution method, rather than
+% analytic.
+% made switch statement for pos or neg peak detection in peak
+% detection function.
+
+% new in average3:
+% added smooth function from average2
+% removed all commented code from average2
+
+
+% clear functions
+Label='AT ';
+Comment='Signal Avereging';
+Annote_Out=[];
+global Log
+global Data
+global PARAMETERSTRING THRESHOLD TPRATIO
+
+NewData=Data{Z};
+TPRATIO=[];
+h=waitbar(0,'Calculating Activation Time');
+for i=1:(length(ChLabel(:,1))-1)
+  fiducialX=[];
+  % USER SELECTABLE OPTIONS %
+  channel = ChLabel(i,2);
+  negativeAP = 1; % Set if AP data is inverted (i.e. comes from
+		  % optical mapping), unset if AP data is normal
+		  % (i.e. depolarization is positive).
+  PRE=20; % these constants let you change how many samples
+          % backward to start the averaging
+  CL=300 ; % Cycle length used for averaging
+						  
+  % END OF USER SELECTABLE OPTIONS %
+
+  X1=[X1X2(1):X1X2(2)];
+  X2=[X1X2(1):X1X2(2)-1];
+  
+  datadiff=diff(NewData(channel,X1));
+  temp=PeakDetection(NewData(channel,X1),Log.Head.SRate,3,5,200,-1.1);
+ if temp~=0
+  fiducialX = X1(temp);
+  fiducialY = NewData(channel,fiducialX);
+
+  for count=1:length(fiducialX);
+    Annote_Out=[Annote_Out;ChLabel(i,1) fiducialX(count) Label];
+  end
+waitbar(i/length(ChLabel(:,1)),h);
+end
+end
+close(h)
+% size(averagematrix)
+
+% Averaging
+whos
+%Annote_Out(:,2)=Annote_Out(:,2);
+Annote_Out=[Annote;Annote_Out];
+
+%figure(200)
+%hist(TPRATIO(:),100)
+
+%%%%%%%%%%%%%%% PADZEROS %%%%%%%%%%%%%%%%%%%%%
+function [PADDEDARRAY]=padzeros(array,elements)
+  arraylength=length(array);
+  PADDEDARRAY=array;
+  if arraylength < elements
+    PADDEDARRAY(arraylength:elements)=0;
+  end
