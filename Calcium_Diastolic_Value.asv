@@ -1,0 +1,60 @@
+% AUTHOR: Rodolphe Katra
+% DATE LAST MODIFIED: 00/00/00
+% This calculate the background for dual tandem detector
+
+function [Label,Comment,Annote_Out]=Caclium_Amplitude(Z,X1X2,ChLabel,Annote)
+Label='C_D';
+Comment='Calcium Diastolic';
+Annote_Out=[];
+global Data
+global Fig
+global Stripchart
+NewAnnote1=[];
+NewAnnote2=[];
+NewData=Data{Z};
+h=waitbar(0,'Please Wait');
+for i=1:(length(ChLabel(:,1)))
+    waitbar(i/length(ChLabel(:,1)),h);
+   NewData0=NewData(ChLabel(i,2),X1X2(1):X1X2(2));
+   TempMin=min(NewData0);
+   NewData1=NewData0-TempMin;
+   
+   TempMean=mean(NewData1);
+   TempStd=std(NewData1);
+   TempMaxAmp=find(NewData1>TempMean+0.65*TempStd);
+   TempMinVal=find(NewData1<TempMean-0.65*TempStd);
+Diastolic=median(NewData0(1:50));
+CaAmp=round(median(NewData1(TempMaxAmp))-Diastolic-TempMin);
+
+% CaAmp=round(median(NewData1(TempMaxAmp))-median(NewData1(TempMinVal)));
+% Diastolic=median(NewData1(TempMinVal))+TempMin;
+
+if CaAmp/std(NewData1(TempMinVal))<5.0 | CaAmp>500 | TempStd>80
+    Diastolic=-1;
+    CaAmp=-1;
+end
+
+if i==1096
+    figure(7)
+    plot(NewData1)
+    SNR=round(median(NewData1(TempMaxAmp))-median(NewData1(TempMinVal)))/std(NewData1(TempMinVal))
+    Amp=round(median(NewData1(TempMaxAmp))-median(NewData1(TempMinVal)))
+    Diast=Diastolic
+    Stdev=std(NewData1(TempMinVal))
+    TempStd
+
+    line([0 700],[median(NewData1(TempMinVal)) median(NewData1(TempMinVal))])
+    line([0 700],[median(NewData1(TempMaxAmp)) median(NewData1(TempMaxAmp))])
+    pause(0.001)
+end
+
+   NewAnnote1=[NewAnnote1;ChLabel(i,1) Diastolic+X1X2(1) 'C_D '];  
+   NewAnnote2=[NewAnnote2;ChLabel(i,1) CaAmp+X1X2(1) 'C_A '];  
+end
+close(h)
+Fig.Annote=[Annote;NewAnnote1;NewAnnote2];
+Zeng_Analysis('Existing Check',Stripchart.Figure,'C_D','Calcium Diastolic',Fig.Annote)
+Zeng_Analysis('Existing Check',Stripchart.Figure,'C_A','Calcium Amplitude',Fig.Annote)
+
+   
+   

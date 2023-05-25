@@ -1,0 +1,47 @@
+% AUTHOR: STEVEN POELZING
+% DATE LAST MODIFIED: 09/20/00
+% This program will assign a signal to noise ratio for each channel
+function [Label,Comment,Annote_Out]=SNR2(Z,X1X2,ChLabel,Annote)
+
+Comment='Activation Time';
+Annote_Out=[];
+Label=[];
+warning off
+%-----------------------------
+global Log
+%-----------------------------
+Data=Z;
+
+h=waitbar(0,'Calculating Signal To Noise Ratio');
+snr=[];
+[aa,bb]=size(Data);
+dir=input('Is the signal 1. Upright or 2. inverted?');
+if dir=='2'
+    Data=-Data;
+end
+
+for i=1:aa
+   % DataCh => The Data for a specific Channel
+   DataCh=Data(ChLabel(i,2),:);
+   
+   stdnoise=std((DataCh(1:10)));
+   noisebase=mean(DataCh(1:10));
+   [y,ii]=max(DataCh);
+   amplitude=mean(DataCh(ii-2:ii+8))-noisebase;
+   snr(i)=amplitude/stdnoise;
+
+   waitbar(i/aa);
+   
+   
+end
+Annote_Out=[];
+close(h)
+[yy,ii]=max(snr);
+disp('Average SNR  | STD SNR  |  Max SNR');
+[mean(snr(find(snr>1))) std(snr(find(snr>1))) max(snr)]
+disp(['Max Channel #: ',num2str(ii)])
+snr(1336) snr(1684) snr(1508) snr(972) snr(885) snr(1774) snr(1435) snr(1612) snr(1795)]'
+disp(['Number of points with SNR greater than 1: ',num2str(size(find(snr>1)))])
+
+
+

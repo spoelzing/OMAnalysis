@@ -1,0 +1,68 @@
+% AUTHOR: STEVEN POELZING
+% DATE LAST MODIFIED: 09/20/00
+% This function allows the user to manually select the delta Vm from every
+% channel in an array.
+function [Label1,Comment1,Annote_Out]=AAmp(Z,X1X2,ChLabel,Annote)
+Label1='Min';
+Comment1='Minimum';
+Label2='Max';
+Comment2='Maximum';
+Annote_Out=[];
+%-----------------------------
+global Log
+global Data
+global LUTDisplay WaveForm Stripchart
+%-----------------------------
+warning off
+NewData=Data{Z}(:,X1X2(1):X1X2(2));
+% The loop that goes through all the channels
+NewAnnote1=[];
+NewAnnote2=[];
+co=60;
+Rp=1;
+Rs=.1;
+f = [0 co*2/Log.Head.SRate co*2/Log.Head.SRate+0.02 1];
+m = [1  1  0 0];
+devs = [ (10^(Rp/20)-1)/(10^(Rp/20)+1)  10^(-Rs/20) ];
+w = [1 1]*max(devs)./devs;
+order=30;
+B=firls(order,f,m,w);
+%NewData=filter(B,1,NewData');
+NewData=NewData;
+%NewData=filter(ones(1,11),1,NewData)';
+%NewData=conv2(NewData',1/11*ones(1,11),'same');
+Channel=1321; % THIS IS THE CHANNEL WITH THE PACING ARTIFACT
+NewDataCh=-NewData(Channel+1,:);
+
+   figure(8)
+   plot(NewDataCh)
+   title(['Select the Baseline.'],'Color',[1 0 0]);
+   [t1,h]=ginput(1);
+   title(['Select the end of the signal'],'Color',[0 0 1]);
+   [t2,h]=ginput(1);
+   t1=round(t1);
+   t2=round(t2);
+   size(NewDataCh);
+%   NewDataCh=100*(NewDataCh-min(NewDataCh(t1:t2)))/(max(NewDataCh(t1:t2))-min(NewDataCh(t1:t2)));
+   
+   
+   counter=1;
+   t1
+   
+for i=1:length(ChLabel(:,1))
+   NewDataCh=-NewData(ChLabel(i,2),:);
+   %NewDataCh=100*(NewDataCh-min(NewDataCh))/(max(NewDataCh)-min(NewDataCh));
+%   figure(200)
+%   plot(NewDataCh)
+%   pause
+   temp1=max(NewDataCh(1:t1));
+   temp2=min(NewDataCh(t1:end));
+
+   NewAnnote1=[NewAnnote1;ChLabel(i,1) temp1-temp2 'AMP '];  
+
+
+
+end
+whos
+Fig.Annote=[Annote;NewAnnote1];
+Zeng_Analysis('Existing Check',Stripchart.Figure,'AMP','Amplitude',Fig.Annote)

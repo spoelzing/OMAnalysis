@@ -1,0 +1,29 @@
+% FFT T-tubule read
+% Author: Poelzing
+% Date: 02/08/2007
+clear all
+close all
+
+
+[fname fpath]=uigetfile('c:\data\samples\*.jpg','Select image file');
+[X,MAP]=imread([fpath fname]);
+
+X=double(rgb2gray(X));
+
+X=X-min(min(X));
+X=X(125:275,800:1200);
+
+imagesc(X)
+[rows cols]=size(X);
+Lf=abs(real(fft(X')));
+Tf=abs(real(fft(X)));
+mLf=mean(Lf');
+mTf=mean(Tf');
+[Y,I1]=max(mLf(round(cols/20):round(cols/10)));
+[Y,I2]=max(mTf(round(rows/20):round(rows/10)));
+
+LTtubulespacing=cols/(I1+round(cols/20)-1)
+TTtubulespacing=rows/(I1+round(rows/20)-1)
+ plot((mTf))
+ figure
+ imagesc(X)

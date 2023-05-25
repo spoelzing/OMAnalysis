@@ -1,0 +1,7 @@
+load bmov
+
+for row=1:44
+    for col=1:30
+        movie(:,row,col)=hilbert(bmov(:,row,col));
+    end
+end

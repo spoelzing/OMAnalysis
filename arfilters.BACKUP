@@ -1,0 +1,3 @@
+Temp2	c1   	high 	1    	60   	120  	5    	1    	13   	bo   	low  	1    	60   	180  	1    	1    	13   	600  
+Temp1	bu   	low  	1    	60   	120  	1    	1    	13   	el   	stop 	1    	60   	180  	1    	1    	13   	600  
+Temp3	bu   	low  	1    	60   	120  	5    	1    	13   	bo   	high 	1    	60   	180  	1    	1    	27   	600  
