@@ -1,0 +1,10 @@
+cwru.136: LUT for the Centronix array on the microscope system (MHMC).
+
+cwru.256: LUT for the Hamamatsu array with a single photographic lens.
+
+cwru.tandem.256: LUT for the Hamamatsu array with tandem lenses.
+
+cwru.tandem.mirror: LUT for the Hamamatsu array with tandem lenses and a mirror in the light path.
+
+mirror.fix [092899-011400]: A fixed version of cwru.tandem.mirror to correct a connector problem.
+	Should be used for files recorded between 09/28/1999 and 01/14/2000.
