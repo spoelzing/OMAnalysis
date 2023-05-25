@@ -1,0 +1,560 @@
+function [varargout]=Impulse(varargin)
+action = varargin{1};
+%load Pressure
+global Data
+global Pressure
+global Log
+global Stripchart
+switch action
+case 'Initial'
+   load lastchannel;
+   Pressure.Computed=0;
+   Pressure.LUT=varargin{6};
+   Pressure.currentpoint=[];
+   Pressure.Amplitude=[];
+   Pressure.dPdtmax=[];
+   Pressure.Figure = figure('Color',[0.8 0.8 0.8], ...
+	'PaperPosition',[18 180 576 432], ...
+	'PaperUnits','points', ...
+	'Position',[420 251 560 420], ...
+	'Tag','Fig1', ...
+   'ToolBar','none');
+dim=get(Pressure.Figure,'Position');   
+Pressure.AxisE = axes('Parent',Pressure.Figure, ...
+	'Units','pixels', ...
+	'CameraUpVector',[0 1 0], ...
+	'Color',[1 1 1], ...
+	'Position',[ 35 .05*dim(4) 500 97], ...
+	'Tag','Axes1', ...
+	'XColor',[0 0 0], ...
+	'YColor',[0 0 0], ...
+	'ZColor',[0 0 0]);
+Pressure.Axis = axes('Parent',Pressure.Figure, ...
+	'Units','pixels', ...
+	'CameraUpVector',[0 1 0], ...
+	'Color',[1 1 1], ...
+	'Position',[35 .5*dim(4) 500 97], ...
+	'Tag','Axes1', ...
+	'XColor',[0 0 0], ...
+	'YColor',[0 0 0], ...
+	'ZColor',[0 0 0]);
+h2 = text('Parent',Pressure.Axis, ...
+	'Color',[0 0 0], ...
+	'HandleVisibility','off', ...
+	'HorizontalAlignment','center', ...
+	'Position',[0.498046875 -0.25 9.160254037844386], ...
+	'Tag','Axes1Text4', ...
+	'VerticalAlignment','cap');
+set(get(h2,'Parent'),'XLabel',h2);
+h2 = text('Parent',Pressure.Axis, ...
+	'Color',[0 0 0], ...
+	'HandleVisibility','off', ...
+	'HorizontalAlignment','center', ...
+	'Position',[-0.0546875 0.4895833333333335 9.160254037844386], ...
+	'Rotation',90, ...
+	'Tag','Axes1Text3', ...
+	'VerticalAlignment','baseline');
+set(get(h2,'Parent'),'YLabel',h2);
+h2 = text('Parent',Pressure.Axis, ...
+	'Color',[0 0 0], ...
+	'HandleVisibility','off', ...
+	'HorizontalAlignment','right', ...
+	'Position',[-0.052734375 4.125 9.160254037844386], ...
+	'Tag','Axes1Text2');
+set(get(h2,'Parent'),'ZLabel',h2);
+h2 = text('Parent',Pressure.Axis, ...
+	'Color',[0 0 0], ...
+	'HandleVisibility','off', ...
+	'HorizontalAlignment','center', ...
+	'Position',[0.498046875 1.072916666666667 9.160254037844386], ...
+	'Tag','Axes1Text1', ...
+	'VerticalAlignment','bottom');
+set(get(h2,'Parent'),'Title',h2);
+Pressure.Text = uicontrol('Parent',Pressure.Figure, ...
+	'Units','points', ...
+   'BackgroundColor',[0 1 0], ...
+   'callback','PressureA AlignFrames',...
+	'ListboxTop',0, ...
+	'Position',[.45*dim(3) .6*dim(4) 65 25], ...
+	'String','Pressure', ...
+   'Tag','Pushbutton1');
+Pressure.Text = uicontrol('Parent',Pressure.Figure, ...
+	'Units','points', ...
+   'BackgroundColor',[0 1 0], ...
+   'callback','PressureA Amplitude',...
+	'ListboxTop',0, ...
+	'Position',[.45*dim(3) .4*dim(4) 65 25], ...
+	'String','Single Amplitude', ...
+   'Tag','Pushbutton1');
+Pressure.ECG= uicontrol('Parent',Pressure.Figure,...
+            'units','pixels',...
+            'String','ECG',...
+            'Style','checkbox', ...
+            'Tag','Channels',...
+            'Position',[.5*dim(3) .75*dim(4) 50 12]);
+
+%              Pacing Stuff        
+Pressure.Pacing = uicontrol('Parent',Pressure.Figure, ...
+	'Units','points', ...
+   'BackgroundColor',[1 1 1], ...
+   'callback','PressureA Pacing',...
+	'ListboxTop',0, ...
+	'Position',[.05*dim(3) .57*dim(4) 30.75 16.5], ...
+   'Style','edit', ...
+   'String','262',...
+	'Tag','EditText2');
+Pressure.TextP = uicontrol('Parent',Pressure.Figure, ...
+	'Units','points', ...
+   'callback','PressureA Pacing',...
+	'BackgroundColor',[0.9 0.2 0.2], ...
+	'ListboxTop',0, ...
+   'Position',[19.5 .62*dim(4) 65 15], ...
+	'String','Pacing Channel', ...
+   'Tag','StaticText3');
+icons = {['[ line([.2 .9 .5 .2 ],[.2 .2 .9 .2 ],''color'',''k'')]';
+   	       '[ line([.1 .9 .5 .1 ],[.8 .8 .1 .8 ],''color'',''k'')]']};
+callbacks=['PressureA(''Increase Ch'')';'PressureA(''Decrease Ch'')'];
+PressType=['flash ';'flash '];
+ChnlChanging=	btngroup('ButtonID',['S1';'S2'],...
+	      'Callbacks',callbacks,...
+   	      'IconFunctions',str2mat(icons{:}),...
+      	   'GroupID', 'School',...
+	      'GroupSize',[2 1],...   
+   	      'PressType',PressType,...
+      	   'BevelWidth',.1,...
+          'units','pixels',...
+          'Position',[.15*dim(3) .75*dim(4) 20 30]);
+     
+       
+%              SIGNAL Stuff        
+Pressure.Signal = uicontrol('Parent',Pressure.Figure, ...
+	'Units','points', ...
+   'BackgroundColor',[1 1 1], ...
+   'callback','PressureA ETC',...
+	'ListboxTop',0, ...
+	'Position',[.06*dim(3) .22*dim(4) 30.75 16.5], ...
+   'Style','edit', ...
+   'String','260',...
+	'Tag','EditText2');
+Pressure.TextS = uicontrol('Parent',Pressure.Figure, ...
+   'Units','points', ...
+   'Callback','PressureA ETC',...
+   'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588], ...
+   'Value',1,...
+	'ListboxTop',0, ...
+	'Position',[.05*dim(3) .28*dim(4) 65 15], ...
+	'String','Pressure Channel', ...
+   'Tag','StaticText3');
+icons = {['[ line([.2 .9 .5 .2 ],[.2 .2 .9 .2 ],''color'',''k'')]';
+   	       '[ line([.1 .9 .5 .1 ],[.8 .8 .1 .8 ],''color'',''k'')]']};
+callbacks=['PressureA(''Increase ChE'')';'PressureA(''Decrease ChE'')'];
+PressType=['flash ';'flash '];
+ChnlChanging=	btngroup('ButtonID',['S1';'S2'],...
+	      'Callbacks',callbacks,...
+   	      'IconFunctions',str2mat(icons{:}),...
+      	   'GroupID', 'TWO',...
+	      'GroupSize',[2 1],...   
+   	      'PressType',PressType,...
+      	   'BevelWidth',.1,...
+          'units','pixels',...
+          'Position',[.16*dim(3) .285*dim(4) 20 30]);
+       
+set(Pressure.Pacing,'String',num2str(lastchannel(1,1)));
+set(Pressure.Signal,'String',num2str(lastchannel(1,2)));
+
+Pressure.Line=[];
+if nargout > 0, fig = Pressure.Figure; end
+Pressure.ChLabel=varargin{4};
+Pressure.Z=varargin{2};
+Pressure.X1X2=varargin{3};
+Pressure.Annote=varargin{5};
+Pressure.Data=Data{2}(:,Pressure.X1X2(1):Pressure.X1X2(2));
+Pressure.Channel=str2num(get(Pressure.Pacing,'String'))+1;
+Pressure.DataCh=Pressure.Data(Pressure.Channel,:);
+plot(Pressure.DataCh,'Parent',Pressure.Axis);
+axis tight
+set(Pressure.Axis,'XTickLabel',num2str(round(str2num(get(Pressure.Axis,'XTickLabel'))/Log.Head.SRate*1000)))
+plot(Pressure.Data(str2num(get(Pressure.Signal,'String'))+1,:),'Parent',Pressure.AxisE);
+axis tight
+set(Pressure.AxisE,'XTickLabel',num2str(round(str2num(get(Pressure.AxisE,'XTickLabel'))/Log.Head.SRate*1000)))
+   
+case 'Pacing'
+   Pressure.Channel=str2num(get(Pressure.Pacing,'String'))+1;
+   Pressure.Pressure=str2num(get(Pressure.Signal,'String'))+1;
+   set(Pressure.TextP,'BackgroundColor', [0.9 0.2 0.2])
+   set(Pressure.TextS,'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588])
+   [x y]=size(Pressure.Data);
+   if Pressure.Channel<=x & Pressure.Channel>=0
+      Pressure.DataCh=Pressure.Data(Pressure.Channel,:);
+      temp=get(Pressure.TextP,'BackgroundColor');
+      if temp(1)==.9
+         plot(Pressure.DataCh,'Parent',Pressure.Axis);
+	     set(Pressure.Axis,'XTickLabel',num2str(round(str2num(get(Pressure.Axis,'XTickLabel'))/Log.Head.SRate*1000)))
+      else
+         plot(Pressure.DataCh,'Parent',Pressure.AxisE);
+	     set(Pressure.AxisE,'XTickLabel',num2str(round(str2num(get(Pressure.Axis,'XTickLabel'))/Log.Head.SRate*1000)))
+      end
+      
+      %axis tight
+   end
+   if ~isempty(Pressure.Line)
+      Current_Axis=axis;
+      Pressure.Line=line([Pressure.Position1 Pressure.Position1],[Current_Axis(3) Current_Axis(4)]);
+      set(Pressure.Line,'Color','r','LineWidth',.5,'EraseMode','xor');   
+   end
+   
+   
+case 'ETC'
+   Pressure.PChannel=str2num(get(Pressure.Signal,'String'))+1;
+   Pressure.Pressure=str2num(get(Pressure.Signal,'String'))+1;
+   set(Pressure.TextP,'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588])
+   set(Pressure.TextS,'BackgroundColor', [0.9 0.2 0.2])
+   [x y]=size(Pressure.Data);
+   if Pressure.Channel<=x & Pressure.PChannel>=0
+      Pressure.DataCh=Pressure.Data(Pressure.PChannel,:);
+      temp=get(Pressure.TextP,'BackgroundColor');
+      if temp(1)==.9
+         plot(Pressure.DataCh,'Parent',Pressure.Axis);
+	     set(Pressure.Axis,'XTickLabel',num2str(round(str2num(get(Pressure.Axis,'XTickLabel'))/Log.Head.SRate*1000)))
+      else
+         plot(Pressure.DataCh,'Parent',Pressure.AxisE);
+	     set(Pressure.AxisE,'XTickLabel',num2str(round(str2num(get(Pressure.Axis,'XTickLabel'))/Log.Head.SRate*1000)))
+      end
+   end
+case 'Amplitude'
+      Pressure.Channel=str2num(get(Pressure.Pacing,'String'))+1;
+      Pressure.Pressure=str2num(get(Pressure.Signal,'String'))+1;
+      Pressure.DataCh=Pressure.Data(Pressure.Pressure,:);
+      Pressure.DataCh=conv2(Pressure.DataCh,1/15*ones(1,15),'same');
+      temp=Pressure.DataCh(16:end-15);
+      Amplitude=max(temp)-min(temp);
+      dPdt=max(diff(temp));
+      b=[Amplitude,dPdt]
+      close(Pressure.Figure)
+figure(100)
+subplot(2,1,1),plot(temp)
+subplot(2,1,2),plot(diff(temp));
+
+      
+      
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AUTOMATICALLY ALIGN FRAMES                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+case 'AlignFrames'
+%   Pressure.Computed=1;
+      Pressure.Channel=str2num(get(Pressure.Pacing,'String'))+1;
+      Pressure.Pressure=str2num(get(Pressure.Signal,'String'))+1;
+      Pressure.DataCh=Pressure.Data(Pressure.Channel,:);
+      Pressure.Sights=[];
+      Sights=[];
+      if get(Pressure.ECG,'Value')
+ %        temp=conv2((Pressure.DataCh-min(Pressure.DataCh)),1/15*ones(1,15),'same');
+ %        temp=wthresh(temp,'s',median(temp));
+ %        figure(200)
+ %        plot(temp)
+ %        pause
+         temp=Pressure.DataCh-min(Pressure.DataCh)+1;
+         Sights1 = find((temp)>.75*max((temp)));
+         Sights2 = find((temp)<.75*min((temp)));
+         Sights2=[];
+         if length(Sights1)>length(Sights2) & length(Sights2)~=0
+            Sights=Sights2;
+         elseif length(Sights2)>length(Sights1) | length(Sights2)==0;
+            Sights=Sights1;
+         end
+      else
+         Sights = find(diff(Pressure.DataCh)>.5*max(diff(Pressure.DataCh)));
+      end
+      
+      index=1;
+      first=1;
+      Pressure.Count=1;
+%  Finds the Pacing Sight Based on what channel is in the pacing window
+   for count=1:length(Sights)-1;
+      Difference=Sights(count+1)-Sights(count);
+      if Difference==1 & first==1;
+         Pressure.Sights(index)=Sights(count);
+         index=index+1;
+         first=0;
+      elseif Difference>1 & first==0;
+         first=1;
+      elseif Difference>1 & first==1;
+         Pressure.Sights(index)=Sights(count);
+         index=index+1;
+      end
+   end
+%   Pressure.Data1=conv2(Pressure.Data(Pressure.Pressure,:),1/15*ones(1,15),'same');
+   Pressure.Data1=Pressure.Data(Pressure.Pressure,:);
+   old=Pressure.Data1(Pressure.Sights(1):Pressure.Sights(2)-1)-min(Pressure.Data1(Pressure.Sights(1):Pressure.Sights(2)));
+   Pressure.NewData=old;
+   PressureA('Shai',Pressure.NewData,Pressure.Sights(1));
+   gap=abs(Pressure.Sights(1)-Pressure.Sights(2)+1);
+   %   Starts to sort out each AP   
+   h=waitbar(0,'Calculating APs Paremeters');
+   waitbar(1/length(Pressure.Sights),h);
+   for count=2:length(Pressure.Sights);
+      if (Pressure.Sights(count)+gap)<length(Pressure.Data1);
+         new=Pressure.Data1(Pressure.Sights(count):Pressure.Sights(count)+gap)-min(Pressure.Data1(Pressure.Sights(count):Pressure.Sights(count)+gap));
+         PressureA('Shai',new,Pressure.Sights(count));
+      end
+      waitbar(count/length(Pressure.Sights),h);
+   end
+   close(h)
+   two=Stripchart.Head.FileName(end-1:end);
+   disp('Mean Pressure Amplitude & Standard Deviation Mean dP/dt   & Standard Deviation')
+   %zzz=Log.Head.Date(10:14)
+   k=[str2num(two) mean(Pressure.Amplitude) std(Pressure.Amplitude) mean(Pressure.dPdtmax) std(Pressure.dPdtmax) Pressure.Count]
+   a=mean(Pressure.Amplitude);
+   b=std(Pressure.Amplitude);
+   c=mean(Pressure.dPdtmax);
+   d=std(Pressure.dPdtmax);
+   %   Pressure.dPdtmax
+   pause(1)
+   close(Pressure.Figure)
+   close(Stripchart.Figure)
+   lastchannel(1,1)=Pressure.Channel-1;
+   lastchannel(1,2)=Pressure.Pressure-1;
+   save lastchannel lastchannel
+   load pressdirectory
+   tester=fopen([pressdirectory,'\junk.txt'],'r');
+   R='A';
+   if tester==-1
+      tester=fopen([pressdirectory,'\junk.txt'],'w');
+      R=[];
+   else
+      fclose(tester);
+      tester=fopen([pressdirectory,'\junk.txt'],'a');
+   end
+   if tester==-1
+      tester=fopen('C:\Winnt\Profiles\spoelzing\Desktop\junk.txt','w');
+      pressdirectory=['C:\Winnt\Profiles\spoelzing\Desktop'];
+      save pressdirectory pressdirectory
+   end
+   
+   %R=input('Save File?');
+   R=[];
+%   Log.Head.Date(10:14)
+   if isempty(R)
+      fprintf(tester,'%s %f %f %f %f %d\n',two,a,b,c,d,Pressure.Count);
+      fclose(tester);
+   end
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SHAI'S PROGRAM                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+case 'Shai'
+Pressure.PChannel=str2num(get(Pressure.Signal,'String'))+1;
+data = [];
+PaceSight = [];
+flen=5000;
+data = varargin{2};
+warning off
+APDLevel=0.5;  % This means APD50  at 50% of the max value after depolarization
+APDUpstroke=0.1;
+%for p=1:256
+%   a=median(data(p,:));
+%   b=mean(data(p,:));
+%   s=.3*std(data(p,:));
+%   if a>b-s & a<b+s
+%      data(p,:)=0*ones(1,length(data(p,:)));
+%   end
+%%   data(p,:)=100*(data(p,:)-min(data(p,:)))/(max(data(p,:))-min(data(p,:)));
+%data(p,:)=(data(p,:)-min(data(p,:)));
+%end
+
+   pace = [];
+   PaceSight=str2num(get(Pressure.Pacing,'String'))+1;
+   SignalSight=str2num(get(Pressure.Signal,'String'))+1;
+   pace = varargin{3};
+   % All Action Potentials are inverted in optical mapping so intuitively max and min are switched
+   if get(Pressure.ECG,'Value')
+      Pressure.Amplitude(Pressure.Count)=max(data)-min(data);
+    temp=conv2((data-min(data)),1/15*ones(1,15),'same');  
+%     temp=data;
+   else
+      [Y,I]=min(data(1:length(data)/2));
+   if I<6
+      Baseline=mean(data(2:10)');
+   else
+      Baseline=mean(data(I-5:I+5));
+   end
+   Pressure.Amplitude(Pressure.Count)=max(data(:)')-Baseline;
+   
+   
+   temp=conv2((data-min(data)),1/15*ones(1,15),'same');  
+%temp=data;
+end
+ %  figure(100)
+ %  subplot(2,1,1),plot(temp)
+ %  subplot(2,1,2),plot(diff(temp))
+ %  pause
+
+   dPdt=(diff(temp));
+   Pressure.dPdtmax(Pressure.Count)=max(dPdt);
+   Pressure.Count=Pressure.Count+1;
+
+case 'Garbage'
+   figure(100)
+   subplot(3,1,1),plot(data(Pressure.PChannel,:))
+   subplot(3,1,2),plot(temp)
+   subplot(3,1,3),plot(dPdt)
+   pause
+  
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   MOUSE DOWN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+case 'Mouse Down'
+   LUTDisplay=get(gcbf,'userdata');
+   b=findobj(Pressure.ImageAxis1,'Tag','patch1');
+   delete(b)
+   b=findobj(Pressure.ImageAxis2,'Tag','patch1');
+   delete(b)
+   Temp.currentpoint=round(get(gca,'currentpoint'));
+   Pressure.currentpoint=Temp.currentpoint;
+   Temp.currentpoint=Temp.currentpoint(1,1:2);
+   Temp.Ch=find(Pressure.Ch_XY(:,2)==Temp.currentpoint(1) &  Pressure.Ch_XY(:,3)==Temp.currentpoint(2));
+   Current_Axis=axis;
+   if (Temp.currentpoint(1,2)>=round(Current_Axis(3)) & Temp.currentpoint(1,1)<(Current_Axis(4))) & (gca==Pressure.ImageAxis1 | gca==Pressure.ImageAxis2)
+      set(Pressure.TextIII,'String',[num2str(Temp.currentpoint(1)),'   ',num2str(Temp.currentpoint(2)),'   Chan:  ',num2str(Pressure.Ch_XY(Temp.Ch))]);
+      axes(Pressure.ImageAxis1)
+      b=patch(...
+      	'CData',[],...
+         'CDataMapping','scaled',...
+         'LineWidth',3,...
+  		   'FaceVertexCData',[],...
+			'EdgeColor','r',...
+			'EraseMode','xor',...
+			'Faces',[1 2 3 4 5],...
+			'MarkerEdgeColor','auto',...
+			'MarkerFaceColor','none',...
+         'MarkerSize',[12],...
+         'Tag','patch1',...
+			'XData',[Temp.currentpoint(1)+.5 Temp.currentpoint(1)+.5 Temp.currentpoint(1)-.5 Temp.currentpoint(1)-.5],...
+			'YData',[Temp.currentpoint(2)+.5 Temp.currentpoint(2)-.5 Temp.currentpoint(2)-.5 Temp.currentpoint(2)+.5]);   
+      %			'FaceColor','r',...
+      axes(Pressure.ImageAxis2)
+	   b=patch(...
+      	'CData',[],...
+         'CDataMapping','scaled',...
+         'LineWidth',3,...
+  		   'FaceVertexCData',[],...
+			'EdgeColor','r',...
+			'EraseMode','xor',...
+			'Faces',[1 2 3 4 5],...
+			'MarkerEdgeColor','auto',...
+			'MarkerFaceColor','none',...
+         'MarkerSize',[12],...
+         'Tag','patch1',...
+			'XData',[Temp.currentpoint(1)+.5 Temp.currentpoint(1)+.5 Temp.currentpoint(1)-.5 Temp.currentpoint(1)-.5],...
+			'YData',[Temp.currentpoint(2)+.5 Temp.currentpoint(2)-.5 Temp.currentpoint(2)-.5 Temp.currentpoint(2)+.5]);   
+      %			'FaceColor','r',...
+      Pressure.Ch=Pressure.Ch_XY(Temp.Ch);
+      PressureA('Trace',Temp.Ch)
+   elseif (Temp.currentpoint(1,2)>=(Current_Axis(3)) & Temp.currentpoint(1,1)<(Current_Axis(4))) & gca==Pressure.Axis2
+   111   
+   end
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %   SHOWS THE TRACE OF A SIGNAL     %
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   INCREASE CHANNEL NUMBER 		  								      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+case 'Increase Ch'
+   Pressure.Channel=str2num(get(Pressure.Pacing,'String'))+1;
+   set(Pressure.TextP,'BackgroundColor', [0.9 0.2 0.2])
+   set(Pressure.TextS,'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588])
+      [x y]=size(Pressure.Data);
+      if Pressure.Channel<x 
+         set(Pressure.Pacing,'String',Pressure.Channel);
+         PressureA('Pacing')
+      else
+         set(Pressure.Pacing,'String',x-1)
+      end
+      
+case 'Decrease Ch'
+      Pressure.Channel=str2num(get(Pressure.Pacing,'String'))-1;
+   set(Pressure.TextP,'BackgroundColor', [0.9 0.2 0.2])
+   set(Pressure.TextS,'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588])
+      [x y]=size(Pressure.Data);
+      if Pressure.Channel>=0 
+         set(Pressure.Pacing,'String',Pressure.Channel);
+         PressureA('Pacing')
+      else
+         set(Pressure.Pacing,'String',0)
+      end
+case 'Increase ChE'
+   Pressure.PChannel=str2num(get(Pressure.Signal,'String'))+1;
+   set(Pressure.TextP,'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588])
+   set(Pressure.TextS,'BackgroundColor',[0.9 0.2 0.2])
+      [x y]=size(Pressure.Data);
+      if Pressure.PChannel<x 
+         set(Pressure.Signal,'String',Pressure.PChannel);
+         PressureA('ETC')
+      else
+         set(Pressure.Signal,'String',x-1)
+      end
+      
+case 'Decrease ChE'
+   Pressure.PChannel=str2num(get(Pressure.Signal,'String'))-1;
+   set(Pressure.TextP,'BackgroundColor',[0.752941176470588 0.752941176470588 0.752941176470588])
+   set(Pressure.TextS,'BackgroundColor',[0.9 0.2 0.2])
+      [x y]=size(Pressure.Data);
+      if Pressure.PChannel>=0 
+         set(Pressure.Signal,'String',Pressure.PChannel);
+         PressureA('ETC')
+      else
+         set(Pressure.Signal,'String',0)
+      end
+
+      
+      
+case 'Good Debugging Code'
+    %       figure(9)
+ %           plot(data(channel,:),'x')
+ %      a=line([0 length(data(channel,:))],[temp2Value temp2Value]);
+ %      b=line([0 length(data(channel,:))],[temp3Value temp3Value]);
+		% b=line([0 length(data(channel,:))],[MaxBeforeETC(channel) MaxBeforeETC(channel)]);
+   %      set(b,'Color',[1 0 0])
+       %  line([ETC ETC],[max(data(channel,:)) min(data(channel,:))])
+       %  line([ETC+ETCDuration ETC+ETCDuration],[max(data(channel,:)) min(data(channel,:))])
+    %     pause
+ case 'lines (503)'
+[row,col,val]=find(Pressure.arrayimageArs>3*nanstd(arrayimage11)+nanmean(arrayimage11));
+ for count=1:length(row)
+    if row(count)<17 & col(count)<17 & row(count)>0 & col(count)>0 
+        Pressure.arrayimageAr(row(count),col(count))=nanmean(arrayimage1);
+        Pressure.arrayimageAp(row(count),col(count))=nanmean(arrayimage2);
+        Pressure.arrayimageAm(row(count),col(count))=nanmean(arrayimage3);
+        temp11=conv2(Pressure.arrayimageAr,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp22=conv2(Pressure.arrayimageAp,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp33=conv2(Pressure.arrayimageAm,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        Pressure.arrayimageAr(row(count),col(count))=temp11(row(count),col(count));
+        Pressure.arrayimageAp(row(count),col(count))=temp22(row(count),col(count));
+        Pressure.arrayimageAm(row(count),col(count))=temp33(row(count),col(count));
+     end
+  end
+  [row,col,val]=find(Pressure.arrayimageAps>1*nanstd(arrayimage22)+nanmean(arrayimage22));
+  for count=1:length(row)
+     if row(count)<17 & col(count)<17 & row(count)>0 & col(count)>0 
+        if row(count)==16 | col(count)==16 | row(count)==1 | col(count)==1
+           if (row(count)==1 & col(count)==1)|(row(count)==16 & col(count)==1)|(row(count)==1 & col(count)==16)|(row(count)==16 & col(count)==16)
+               Pressure.arrayimageAp(row(count),col(count))=nanmean(arrayimage2)+100*nanstd(arrayimage2);
+          else
+              Pressure.arrayimageAp(row(count),col(count))=nanmean(arrayimage2)+50*nanstd(arrayimage2);
+              Pressure.arrayimageAm(row(count),col(count))=nanmean(arrayimage3)+4*nanstd(arrayimage3);
+           end
+     	 end   
+        temp11=conv2(Pressure.arrayimageAr,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp22=conv2(Pressure.arrayimageAp,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp33=conv2(Pressure.arrayimageAm,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp11=conv2(temp11,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp22=conv2(temp22,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        temp33=conv2(temp33,[1/8 1/8 1/8;1/8 0 1/8;1/8 1/8 1/8],'same'); 
+        Pressure.arrayimageAr(row(count),col(count))=temp11(row(count),col(count));
+        Pressure.arrayimageAp(row(count),col(count))=temp22(row(count),col(count));
+        Pressure.arrayimageAm(row(count),col(count))=temp33(row(count),col(count));
+     end
+  end
+
+end

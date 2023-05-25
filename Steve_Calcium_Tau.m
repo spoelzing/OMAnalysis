@@ -1,0 +1,91 @@
+% AUTHOR: Steven Poelzing
+% DATE LAST MODIFIED: 04/09/2008
+% This calculates the decay constant of the calcium transient
+
+function [Label,Comment,Annote_Out]=Calcium_Amplitude(Z,X1X2,ChLabel,Annote)
+Label='C_T';
+Comment='Calcium Tau';
+Annote_Out=[];
+Fig.Annote=[];
+Annote=[];
+global Data
+global Fig
+global Stripchart
+NewAnnote1=[];
+NewAnnote2=[];
+NewData=Data{Z};
+h=waitbar(0,'Please Wait');
+for i=1:(length(ChLabel(:,1)))
+   waitbar(i/length(ChLabel(:,1)),h);
+   NewData0=NewData(ChLabel(i,2),X1X2(1):X1X2(2));
+   TempMin=min(NewData0);
+   NewData1=NewData0-TempMin;
+Diastolic=round(median(NewData0(1:25)));
+EndDiastolic=round(median(NewData0(end-25:end)));
+D1=Diastolic;
+% DV=Diastolic-TempMin;
+DV=EndDiastolic-TempMin;
+NewData1=NewData1-DV;
+TT=conv2(NewData1,1/31*ones(1,31),'same');
+TT=TT-min(TT)+0.00001;
+[CaAmp I]=max(TT);
+
+[ys I2]=find(TT(I(1):end)<0.65*CaAmp);
+[ys I3]=find(TT(I(1):end)<0.10*CaAmp);
+TT=TT/max(TT)*100;
+% if i==121
+%     I
+%     I2
+%     figure(7)
+% %     plot(log(TT(I2(1)+I(1):end)))
+%     plot(TT)
+% end
+if ~isempty(I2) & I2(1)+I(1)<length(TT) & ~isempty(I3) & I3(1)+I(1)<length(TT)
+%     ender=length(TT);
+    ender=I(1)+I3(1);
+   TT1=polyfit([0:length(TT(I2(1)+I(1):ender))-1],log(TT(I2(1)+I(1):ender)),1);
+    [j1,j2,j3,j4,R1]=regress(log(TT(I2(1)+I(1):ender))',[0:length(TT(I2(1)+I(1):ender))-1;ones(1,length(TT(I2(1)+I(1):ender)))]');
+    R=round(R1(1)*100);
+    Tau=round(-1/TT1(1));
+else
+    R=-1;
+    Tau=-1;
+end
+if CaAmp/std(NewData0(1:25))<1.5 | R<40 | Tau>140
+    R=-1;
+    Tau=-1;
+end
+
+if i==1383 %channel to be displayed to check fits
+% if 1==2
+bstuff200=TT;
+save bstuff200 bstuff200
+    disp('************************')
+    Lam=-1/Tau;
+    Tau
+    figure(7)
+    subplot(1,3,1),plot(TT(I2(1)+I(1):ender))
+    axis tight
+    subplot(1,3,2),plot(TT(I2(1)+I(1):ender))
+    hold
+    subplot(1,3,2),plot(exp(Lam*[0:length(TT(I2(1)+I(1):ender))-1]+TT1(2)),'r')
+    axis tight
+    hold off
+  
+%     subplot(1,3,3),plot(NewData0);    
+    subplot(1,3,3),plot(TT);
+    axis tight
+    disp('************************')
+
+end
+
+   NewAnnote1=[NewAnnote1;ChLabel(i,1) Tau+X1X2(1) 'C_T'];  %tau value
+   NewAnnote2=[NewAnnote2;ChLabel(i,1) R+X1X2(1) 'CTR'];  %correlation coefficient 'R'
+
+end
+Zeng_Analysis('Existing Check',Stripchart.Figure,'C_T','Calcium Ca Tau',[Annote;NewAnnote1]) 
+Zeng_Analysis('Existing Check',Stripchart.Figure,'CTR','Ca Corr Coef.',[Annote;NewAnnote1;NewAnnote2]) 
+
+
+ close(h)  
+   
